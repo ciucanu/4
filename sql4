@@ -45,21 +45,19 @@ execute_sql() {
     fi
 }
 
-# Function to download a file
+# Updated Function to download a file
 download_file() {
     URL="$1"
     OUTPUT="$2"
 
     log_message "$INFO" "Downloading file from URL: $URL to $OUTPUT"
 
-    curl --silent --fail -o "$OUTPUT" "$URL"
-
-    # Check if the download was successful
-    if [ $? -ne 0 ]; then
+    # Use curl to download the file, capturing output and errors with tee
+    if curl --silent --fail -o "$OUTPUT" "$URL" 2>&1 | tee -a "$LOG_FILE"; then
+        log_message "$INFO" "Successfully downloaded $URL"
+    else
         log_message "$ERROR" "Failed to download $URL"
         exit 1
-    else
-        log_message "$INFO" "Successfully downloaded $URL"
     fi
 }
 
