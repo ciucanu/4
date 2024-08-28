@@ -1,18 +1,23 @@
 #!/bin/bash
 
-set -e 
+set -e
 
 # Log levels
 INFO="[INFO]"
 ERROR="[ERROR]"
 DEBUG="[DEBUG]"
 
+# Get the current date for log filename
+LOG_DATE=$(date '+%Y-%m-%d')
+LOG_FILE="/tmp/sql_$LOG_DATE.log"
+
 # Function to log messages
 log_message() {
     local level="$1"
     shift
     local message="$@"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $level $message"
+    # Log to both console and file
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $level $message" | tee -a "$LOG_FILE"
 }
 
 # Function to get password using eva.sh script
@@ -27,12 +32,12 @@ execute_sql() {
     SQL_FILE="$1"
     PG_CONNECTION="$2"
     PASSWORD="$3"
-    
+
     log_message "$INFO" "Executing SQL file: $SQL_FILE on connection: $PG_CONNECTION"
-    
+
     # Use PGPASSWORD environment variable to pass password securely
     PGPASSWORD="$PASSWORD" psql "$PG_CONNECTION" -c "\\i $SQL_FILE"
-    
+
     if [ $? -ne 0 ]; then
         log_message "$ERROR" "Failed to execute SQL file: $SQL_FILE"
     else
@@ -44,11 +49,11 @@ execute_sql() {
 download_file() {
     URL="$1"
     OUTPUT="$2"
-    
+
     log_message "$INFO" "Downloading file from URL: $URL to $OUTPUT"
-    
+
     curl --silent --fail -o "$OUTPUT" "$URL"
-    
+
     # Check if the download was successful
     if [ $? -ne 0 ]; then
         log_message "$ERROR" "Failed to download $URL"
@@ -61,9 +66,9 @@ download_file() {
 # Function to process a single SQL file
 process_sql_file() {
     SQL_FILE="$1"
-    
+
     log_message "$INFO" "Processing SQL file: $SQL_FILE"
-    
+
     if ! grep -q "^$(basename "$SQL_FILE") " config.txt; then
         log_message "$ERROR" "Specified SQL file $(basename "$SQL_FILE") not found in config.txt"
         return 1  # Change exit to return to continue processing other files
@@ -80,12 +85,12 @@ process_sql_file() {
 # Function to process a ZIP file
 process_zip_file() {
     ZIP_FILE="$1"
-    
+
     log_message "$INFO" "Processing ZIP file: $ZIP_FILE"
-    
+
     # Create a unique temporary directory
     TEMP_DIR=$(mktemp -d)
-    
+
     # Ensure cleanup of the temporary directory on exit
     trap "rm -rf $TEMP_DIR" EXIT
 
