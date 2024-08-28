@@ -45,7 +45,7 @@ execute_sql() {
     fi
 }
 
-# Corrected Function to download a file
+# Function to download a file
 download_file() {
     URL="$1"
     OUTPUT="$2"
@@ -53,7 +53,7 @@ download_file() {
     log_message "$INFO" "Downloading file from URL: $URL to $OUTPUT"
 
     # Use curl to download the file, capturing output and errors with tee
-    curl --silent --fail -o "$OUTPUT" "$URL" 2>&1 | tee -a "$LOG_FILE"
+    curl --silent --show-error --fail -o "$OUTPUT" "$URL" 2>&1 | tee -a "$LOG_FILE"
     curl_exit_status=${PIPESTATUS[0]}  # Capture the exit status of curl
 
     if [ $curl_exit_status -ne 0 ]; then
