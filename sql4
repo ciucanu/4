@@ -35,10 +35,10 @@ execute_sql() {
 
     log_message "$INFO" "Executing SQL file: $SQL_FILE on connection: $PG_CONNECTION"
 
-    # Use PGPASSWORD environment variable to pass password securely and capture output
-    PGPASSWORD="$PASSWORD" psql "$PG_CONNECTION" -c "\\i $SQL_FILE" &>> "$LOG_FILE"
+    # Use PGPASSWORD environment variable to pass password securely and capture output with tee
+    PGPASSWORD="$PASSWORD" psql "$PG_CONNECTION" -c "\\i $SQL_FILE" 2>&1 | tee -a "$LOG_FILE"
 
-    if [ $? -ne 0 ]; then
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
         log_message "$ERROR" "Failed to execute SQL file: $SQL_FILE"
     else
         log_message "$INFO" "Successfully executed SQL file: $SQL_FILE"
