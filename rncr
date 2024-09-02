@@ -1,0 +1,21 @@
+---
+- name: Replace certificate part in configuration files
+  hosts: all
+  become: true
+  vars:
+    config_files:
+      - /path/to/config1.conf
+      - /path/to/config2.conf
+    new_certificate: |
+      -----BEGIN CERTIFICATE-----
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA... (your new certificate content)
+      -----END CERTIFICATE-----
+
+  tasks:
+    - name: Replace certificate in configuration files
+      blockinfile:
+        path: "{{ item }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - CERTIFICATE"
+        block: "{{ new_certificate }}"
+        backup: yes
+      loop: "{{ config_files }}"
