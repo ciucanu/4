@@ -6,14 +6,15 @@
     config_files:
       - /path/to/config1.xml
       - /path/to/config2.xml
-    new_certificate: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA... (your new certificate content)"
+    new_certificate: |
+      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA... (your new certificate content, multi-line)
 
   tasks:
     - name: Replace certificate in XML files
       replace:
         path: "{{ item }}"
-        # Regular expression to match the content between <ds:X509Certificate> and </ds:X509Certificate>
-        regexp: '(<ds:X509Certificate>)(.*?)(</ds:X509Certificate>)'
+        # Regular expression to match the content between <ds:X509Certificate> and </ds:X509Certificate>, including multi-line content
+        regexp: '(<ds:X509Certificate>)([\s\S]*?)(</ds:X509Certificate>)'
         # Replacing only the captured certificate content
         replace: '\1{{ new_certificate | regex_escape }}\3'
         backup: yes
