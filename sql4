@@ -73,12 +73,13 @@ process_sql_file() {
 
     log_message "$INFO" "Processing SQL file: $SQL_FILE"
 
-    if ! grep -q "^$(basename "$SQL_FILE") " "$SCRIPT_DIR/config.txt"; then
-        log_message "$ERROR" "Specified SQL file $(basename "$SQL_FILE") not found in config.txt"
+    SQL_FILENAME=$(basename "$SQL_FILE")
+    if ! grep -q "^$SQL_FILENAME " "$SCRIPT_DIR/config.txt"; then
+        log_message "$ERROR" "Specified SQL file $SQL_FILENAME not found in config.txt"
         return 1  # Change exit to return to continue processing other files
     fi
 
-    LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' "$SCRIPT_DIR/config.txt")
+    LINE=$(awk -v file="$SQL_FILENAME" '$1 == file' "$SCRIPT_DIR/config.txt")
     IFS=' ' read -r -a array <<< "$LINE"
     PG_CONNECTION="${array[1]}"
     EVA_PATH="${array[2]}"
@@ -101,12 +102,13 @@ process_zip_file() {
     unzip "$ZIP_FILE" -d "$TEMP_DIR"
 
     for SQL_FILE in "$TEMP_DIR"/*.sql; do
-        if ! grep -q "^$(basename "$SQL_FILE") " "$SCRIPT_DIR/config.txt"; then
-            log_message "$ERROR" "SQL file $(basename "$SQL_FILE") not found in config.txt, skipping..."
+        SQL_FILENAME=$(basename "$SQL_FILE")
+        if ! grep -q "^$SQL_FILENAME " "$SCRIPT_DIR/config.txt"; then
+            log_message "$ERROR" "SQL file $SQL_FILENAME not found in config.txt, skipping..."
             continue
         fi
 
-        LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' "$SCRIPT_DIR/config.txt")
+        LINE=$(awk -v file="$SQL_FILENAME" '$1 == file' "$SCRIPT_DIR/config.txt")
         IFS=' ' read -r -a array <<< "$LINE"
         PG_CONNECTION="${array[1]}"
         EVA_PATH="${array[2]}"
