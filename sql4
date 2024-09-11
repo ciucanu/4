@@ -11,6 +11,9 @@ DEBUG="[DEBUG]"
 LOG_DATE=$(date '+%Y-%m-%d')
 LOG_FILE="/tmp/sql_$LOG_DATE.log"
 
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Function to log messages
 log_message() {
     local level="$1"
@@ -70,26 +73,17 @@ process_sql_file() {
 
     log_message "$INFO" "Processing SQL file: $SQL_FILE"
 
-    # Get all matching lines for the SQL file from config.txt
-    matches=$(grep "^$(basename "$SQL_FILE") " config.txt)
-
-    if [ -z "$matches" ]; then
+    if ! grep -q "^$(basename "$SQL_FILE") " "$SCRIPT_DIR/config.txt"; then
         log_message "$ERROR" "Specified SQL file $(basename "$SQL_FILE") not found in config.txt"
-        return 1
+        return 1  # Change exit to return to continue processing other files
     fi
 
-    # Loop through each matching line
-    while IFS= read -r LINE; do
-        IFS=' ' read -r -a array <<< "$LINE"
-        PG_CONNECTION="${array[1]}"
-        EVA_PATH="${array[2]}"
-        PASSWORD=$(get_password "$EVA_PATH")
-
-        log_message "$DEBUG" "Found entry for $(basename "$SQL_FILE") with connection: $PG_CONNECTION and EVA path: $EVA_PATH"
-
-        # Execute the SQL file with the extracted connection info
-        execute_sql "$SQL_FILE" "$PG_CONNECTION" "$PASSWORD"
-    done <<< "$matches"
+    LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' "$SCRIPT_DIR/config.txt")
+    IFS=' ' read -r -a array <<< "$LINE"
+    PG_CONNECTION="${array[1]}"
+    EVA_PATH="${array[2]}"
+    PASSWORD=$(get_password "$EVA_PATH")
+    execute_sql "$SQL_FILE" "$PG_CONNECTION" "$PASSWORD"
 }
 
 # Function to process a ZIP file
@@ -107,12 +101,12 @@ process_zip_file() {
     unzip "$ZIP_FILE" -d "$TEMP_DIR"
 
     for SQL_FILE in "$TEMP_DIR"/*.sql; do
-        if ! grep -q "^$(basename "$SQL_FILE") " config.txt; then
+        if ! grep -q "^$(basename "$SQL_FILE") " "$SCRIPT_DIR/config.txt"; then
             log_message "$ERROR" "SQL file $(basename "$SQL_FILE") not found in config.txt, skipping..."
             continue
         fi
 
-        LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' config.txt)
+        LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' "$SCRIPT_DIR/config.txt")
         IFS=' ' read -r -a array <<< "$LINE"
         PG_CONNECTION="${array[1]}"
         EVA_PATH="${array[2]}"
