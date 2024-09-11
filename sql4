@@ -70,17 +70,26 @@ process_sql_file() {
 
     log_message "$INFO" "Processing SQL file: $SQL_FILE"
 
-    if ! grep -q "^$(basename "$SQL_FILE") " config.txt; then
+    # Get all matching lines for the SQL file from config.txt
+    matches=$(grep "^$(basename "$SQL_FILE") " config.txt)
+
+    if [ -z "$matches" ]; then
         log_message "$ERROR" "Specified SQL file $(basename "$SQL_FILE") not found in config.txt"
-        return 1  # Change exit to return to continue processing other files
+        return 1
     fi
 
-    LINE=$(awk -v file="$(basename "$SQL_FILE")" '$1 == file' config.txt)
-    IFS=' ' read -r -a array <<< "$LINE"
-    PG_CONNECTION="${array[1]}"
-    EVA_PATH="${array[2]}"
-    PASSWORD=$(get_password "$EVA_PATH")
-    execute_sql "$SQL_FILE" "$PG_CONNECTION" "$PASSWORD"
+    # Loop through each matching line
+    while IFS= read -r LINE; do
+        IFS=' ' read -r -a array <<< "$LINE"
+        PG_CONNECTION="${array[1]}"
+        EVA_PATH="${array[2]}"
+        PASSWORD=$(get_password "$EVA_PATH")
+
+        log_message "$DEBUG" "Found entry for $(basename "$SQL_FILE") with connection: $PG_CONNECTION and EVA path: $EVA_PATH"
+
+        # Execute the SQL file with the extracted connection info
+        execute_sql "$SQL_FILE" "$PG_CONNECTION" "$PASSWORD"
+    done <<< "$matches"
 }
 
 # Function to process a ZIP file
