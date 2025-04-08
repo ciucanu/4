@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Check argument
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <path>"
+    exit 1
+fi
+
+TARGET_PATH="$1"
+CURRENT_USER=$(whoami)
+CURRENT_HOST=$(hostname -s)
+
+# Define suffix mapping
+declare -A SUFFIX_MAP=(
+    [ca0]=caa
+    [ca1]=cab
+    [ci0]=cia
+    [ci1]=civ
+    [cw0]=cwa
+    [cw1]=cwb
+)
+
+# Reverse map to find source suffix
+SOURCE_SUFFIX=""
+for key in "${!SUFFIX_MAP[@]}"; do
+    if [[ "$CURRENT_HOST" == *${SUFFIX_MAP[$key]} ]]; then
+        SOURCE_SUFFIX="$key"
+        break
+    fi
+done
+
+if [[ -z "$SOURCE_SUFFIX" ]]; then
+    echo "Error: Could not determine source hostname for $CURRENT_HOST"
+    exit 1
+fi
+
+# Build source hostname
+SOURCE_HOST="${CURRENT_HOST%${SUFFIX_MAP[$SOURCE_SUFFIX]}}$SOURCE_SUFFIX"
+
+# Ensure target directory exists
+if [[ ! -d "$TARGET_PATH" ]]; then
+    mkdir -p "$TARGET_PATH" 2>/dev/null || \
+    dado su - root -c "mkdir -p '$TARGET_PATH' && chown -R $CURRENT_USER:$CURRENT_USER '$TARGET_PATH'"
+fi
+
+# Perform rsync
+rsync -a --progress "$SOURCE_HOST:$TARGET_PATH/" "$TARGET_PATH/"
